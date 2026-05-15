@@ -1,0 +1,48 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "atomr-ontology"
+version = "0.1.0"
+description = "Python bindings for atomr-ontology — labeled property graphs, RDF/OWL projection, and an agent-driven ontology-learning pipeline."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "Apache-2.0" }
+authors = [{ name = "atomr contributors" }]
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Repository = "https://github.com/rustakka/atomr-ontology"
+Homepage = "https://github.com/rustakka/atomr-ontology"
+
+[project.optional-dependencies]
+# Each extra maps 1:1 to a `provider-*` cargo feature on the umbrella
+# crate. The Python wheel itself adds no Python deps for these — the
+# native code path is selected at build time via:
+#   maturin build --features provider-openai
+# (or whichever provider you want). Listing them here lets users write
+# `pip install atomr-ontology[openai]` once we publish provider-specific
+# wheels.
+openai     = []
+anthropic  = []
+gemini     = []
+litellm    = []
+vllm       = []
+candle     = []
+ort        = []
+tensorrt   = []
+mistralrs  = []
+cudarc     = []
+
+[tool.maturin]
+module-name = "atomr_ontology._atomr_ontology"
+python-source = "python"
+features = ["pyo3/extension-module"]
+strip = true

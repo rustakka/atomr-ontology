@@ -1,0 +1,3 @@
+[alias]
+# `cargo xtask <subcommand>` — see xtask/src/main.rs for available subcommands.
+xtask = "run --package xtask --"

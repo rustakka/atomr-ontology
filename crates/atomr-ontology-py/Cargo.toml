@@ -1,0 +1,61 @@
+[package]
+name = "atomr-ontology-py"
+description = "Python bindings for the atomr-ontology workspace."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+publish = false
+
+[lib]
+name = "_atomr_ontology"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module", "chrono", "serde", "abi3-py38"] }
+pyo3-async-runtimes = { version = "0.22", features = ["tokio-runtime"] }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+async-trait = { workspace = true }
+
+# Umbrella facade pulls everything we want to wrap. Default features
+# already include rdf/provenance/store/extract/induce/validate/org; we
+# add testkit explicitly so MockBackend is available, and turn on the
+# RDF writers gated behind the umbrella's cargo features.
+atomr-ontology = { workspace = true, features = [
+    "rdf",
+    "provenance",
+    "store",
+    "extract",
+    "induce",
+    "validate",
+    "org",
+    "testkit",
+] }
+atomr-ontology-rdf = { workspace = true, features = ["turtle", "ntriples", "jsonld"] }
+
+[features]
+default = []
+
+# Provider opt-ins — each maps to one upstream atomr-infer provider.
+# Selecting any of them pulls the umbrella's `infer` feature which
+# exposes the `InferBackend` adapter.
+infer            = ["atomr-ontology/infer"]
+provider-openai     = ["infer", "atomr-ontology/provider-openai"]
+provider-anthropic  = ["infer", "atomr-ontology/provider-anthropic"]
+provider-gemini     = ["infer", "atomr-ontology/provider-gemini"]
+provider-litellm    = ["infer", "atomr-ontology/provider-litellm"]
+provider-vllm       = ["infer", "atomr-ontology/provider-vllm"]
+provider-candle     = ["infer", "atomr-ontology/provider-candle"]
+provider-ort        = ["infer", "atomr-ontology/provider-ort"]
+provider-tensorrt   = ["infer", "atomr-ontology/provider-tensorrt"]
+provider-mistralrs  = ["infer", "atomr-ontology/provider-mistralrs"]
+provider-cudarc     = ["infer", "atomr-ontology/provider-cudarc"]
+
+[lints]
+workspace = true

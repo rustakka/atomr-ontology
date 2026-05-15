@@ -1,0 +1,27 @@
+[package]
+name = "auto_extract_from_text"
+description = "Run the full 7-stage auto-extract pipeline against a corpus, optionally with a real provider."
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+atomr-ontology = { workspace = true }
+atomr-ontology-org = { workspace = true }
+atomr-ontology-testkit = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[features]
+default = []
+# Real provider features re-exported from atomr-ontology.
+provider-openai = ["atomr-ontology/provider-openai"]
+provider-anthropic = ["atomr-ontology/provider-anthropic"]
+provider-litellm = ["atomr-ontology/provider-litellm"]
+
+[lints]
+workspace = true

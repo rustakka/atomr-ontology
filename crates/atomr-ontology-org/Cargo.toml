@@ -1,0 +1,19 @@
+[package]
+name = "atomr-ontology-org"
+description = "W3C Org Ontology and schema.org Organization reference vocabulary."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+
+[dependencies]
+atomr-ontology-core = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,57 @@
+[package]
+name = "atomr-ontology"
+description = "Umbrella facade re-exporting the atomr-ontology workspace."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+
+[dependencies]
+atomr-ontology-core = { workspace = true }
+atomr-ontology-rdf = { workspace = true, optional = true }
+atomr-ontology-provenance = { workspace = true, optional = true }
+atomr-ontology-store = { workspace = true, optional = true }
+atomr-ontology-extract = { workspace = true, optional = true }
+atomr-ontology-induce = { workspace = true, optional = true }
+atomr-ontology-validate = { workspace = true, optional = true }
+atomr-ontology-org = { workspace = true, optional = true }
+atomr-ontology-testkit = { workspace = true, optional = true }
+
+# Optional sibling-ecosystem integrations.
+atomr-infer = { workspace = true, optional = true }
+atomr-agents = { workspace = true, optional = true }
+
+[features]
+default = ["rdf", "provenance", "store", "extract", "induce", "validate", "org"]
+
+# Local re-exports.
+rdf = ["dep:atomr-ontology-rdf"]
+provenance = ["dep:atomr-ontology-provenance"]
+store = ["dep:atomr-ontology-store"]
+extract = ["dep:atomr-ontology-extract"]
+induce = ["dep:atomr-ontology-induce", "extract"]
+validate = ["dep:atomr-ontology-validate"]
+org = ["dep:atomr-ontology-org"]
+testkit = ["dep:atomr-ontology-testkit", "extract"]
+
+# Provider re-exports (delegate to atomr-infer's feature flags).
+infer = ["dep:atomr-infer"]
+provider-openai = ["infer", "atomr-infer/openai"]
+provider-anthropic = ["infer", "atomr-infer/anthropic"]
+provider-gemini = ["infer", "atomr-infer/gemini"]
+provider-litellm = ["infer", "atomr-infer/litellm"]
+provider-vllm = ["infer", "atomr-infer/vllm"]
+provider-candle = ["infer", "atomr-infer/candle"]
+provider-ort = ["infer", "atomr-infer/ort"]
+provider-tensorrt = ["infer", "atomr-infer/tensorrt"]
+provider-mistralrs = ["infer", "atomr-infer/mistralrs"]
+provider-cudarc = ["infer", "atomr-infer/cudarc"]
+
+# Agent integration (Tool / Callable adapters).
+agents = ["dep:atomr-agents", "extract"]
+
+[lints]
+workspace = true

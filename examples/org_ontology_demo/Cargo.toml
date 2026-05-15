@@ -1,0 +1,20 @@
+[package]
+name = "org_ontology_demo"
+description = "Build a W3C Org Ontology graph from a hand-written seed using a mock backend."
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+atomr-ontology = { workspace = true }
+atomr-ontology-org = { workspace = true }
+atomr-ontology-testkit = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+
+[features]
+default = ["atomr-ontology/store", "atomr-ontology/extract", "atomr-ontology/induce", "atomr-ontology/validate", "atomr-ontology/org", "atomr-ontology/testkit"]
+
+[lints]
+workspace = true
