@@ -1,0 +1,20 @@
+[package]
+name = "atomr-ontology-query"
+description = "openCypher / SPARQL subset parsers compiling to atomr-ontology-store pattern IR."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+
+[dependencies]
+atomr-ontology-core = { workspace = true }
+atomr-ontology-store = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

@@ -37,6 +37,9 @@ pub enum AdapterError {
     /// A property value could not be projected.
     #[error("unsupported value: {0}")]
     UnsupportedValue(String),
+    /// A parser rejected its input.
+    #[error("parse error: {0}")]
+    Parse(String),
 }
 
 /// Project an [`Ontology`] to a vector of [`Triple`]s.

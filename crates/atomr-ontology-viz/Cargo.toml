@@ -1,0 +1,19 @@
+[package]
+name = "atomr-ontology-viz"
+description = "GraphViz DOT and Mermaid renderers for ontology + provenance graphs."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+
+[dependencies]
+atomr-ontology-core = { workspace = true }
+atomr-ontology-provenance = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

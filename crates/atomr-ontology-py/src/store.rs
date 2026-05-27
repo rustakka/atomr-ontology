@@ -56,6 +56,16 @@ impl PyNodePattern {
         slf.inner.id = Some(id.inner);
         slf
     }
+    /// Add an OR-branch alternative.
+    fn or_(mut slf: PyRefMut<'_, Self>, alt: PyNodePattern) -> PyRefMut<'_, Self> {
+        slf.inner.or.push(Box::new(alt.inner));
+        slf
+    }
+    /// Add a NOT-branch exclusion.
+    fn not_(mut slf: PyRefMut<'_, Self>, neg: PyNodePattern) -> PyRefMut<'_, Self> {
+        slf.inner.not.push(Box::new(neg.inner));
+        slf
+    }
 }
 
 /// Single-edge pattern.
@@ -87,6 +97,11 @@ impl PyEdgePattern {
         let pv = py_to_property_value(&value)?;
         slf.inner.properties.insert(name.to_string(), pv.inner);
         Ok(slf)
+    }
+    /// Variable-length repetition (`min..=max`).
+    fn repeat(mut slf: PyRefMut<'_, Self>, min: usize, max: usize) -> PyRefMut<'_, Self> {
+        slf.inner.repeat = Some(min..=max);
+        slf
     }
 }
 
@@ -132,6 +147,31 @@ impl PyTraversalPlan {
     }
     fn inbound(mut slf: PyRefMut<'_, Self>, edge: PyEdgePattern, target: PyNodePattern) -> PyRefMut<'_, Self> {
         slf.inner.steps.push(TraversalStep::inbound(edge.inner, target.inner));
+        slf
+    }
+    /// Project the result row to the given binding names.
+    fn return_(mut slf: PyRefMut<'_, Self>, columns: Vec<String>) -> PyRefMut<'_, Self> {
+        slf.inner.return_columns = columns;
+        slf
+    }
+    /// Add an ascending order key.
+    fn order_by(mut slf: PyRefMut<'_, Self>, binding: String) -> PyRefMut<'_, Self> {
+        slf.inner.order.push((binding, atomr_ontology::store::SortOrder::Ascending));
+        slf
+    }
+    /// Add a descending order key.
+    fn order_by_desc(mut slf: PyRefMut<'_, Self>, binding: String) -> PyRefMut<'_, Self> {
+        slf.inner.order.push((binding, atomr_ontology::store::SortOrder::Descending));
+        slf
+    }
+    /// Skip the first `n` rows after ordering.
+    fn skip(mut slf: PyRefMut<'_, Self>, n: usize) -> PyRefMut<'_, Self> {
+        slf.inner.skip = n;
+        slf
+    }
+    /// Limit the result to `n` rows.
+    fn limit(mut slf: PyRefMut<'_, Self>, n: usize) -> PyRefMut<'_, Self> {
+        slf.inner.limit = Some(n);
         slf
     }
 }

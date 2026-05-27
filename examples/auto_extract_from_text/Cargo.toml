@@ -21,7 +21,17 @@ default = []
 # Real provider features re-exported from atomr-ontology.
 provider-openai = ["atomr-ontology/provider-openai"]
 provider-anthropic = ["atomr-ontology/provider-anthropic"]
+provider-gemini = ["atomr-ontology/provider-gemini"]
 provider-litellm = ["atomr-ontology/provider-litellm"]
+provider-vllm = ["atomr-ontology/provider-vllm"]
+provider-candle = ["atomr-ontology/provider-candle"]
+provider-ort = ["atomr-ontology/provider-ort"]
+provider-tensorrt = ["atomr-ontology/provider-tensorrt"]
+provider-mistralrs = ["atomr-ontology/provider-mistralrs"]
+# HTTP-based driver — works with OpenAI-compatible REST endpoints
+# (OpenAI, Anthropic Messages API, LiteLLM proxy) without depending
+# on the heavier atomr-infer provider crates.
+http-driver = ["atomr-ontology/http-driver"]
 
 [lints]
 workspace = true

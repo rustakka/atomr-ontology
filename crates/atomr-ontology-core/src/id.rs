@@ -130,12 +130,12 @@ pub(crate) mod serde_bytes_array {
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<[u8; 32], D::Error> {
-        let buf: &[u8] = serde_bytes::deserialize(d)?;
+        let buf: serde_bytes::ByteBuf = serde::Deserialize::deserialize(d)?;
         if buf.len() != 32 {
             return Err(serde::de::Error::invalid_length(buf.len(), &"32 bytes"));
         }
         let mut out = [0u8; 32];
-        out.copy_from_slice(buf);
+        out.copy_from_slice(&buf);
         Ok(out)
     }
 }

@@ -38,9 +38,21 @@ atomr-ontology = { workspace = true, features = [
     "testkit",
 ] }
 atomr-ontology-rdf = { workspace = true, features = ["turtle", "ntriples", "jsonld"] }
+atomr-ontology-persist = { workspace = true, features = ["file"] }
+atomr-ontology-reason = { workspace = true }
+atomr-ontology-embed = { workspace = true }
+atomr-ontology-version = { workspace = true }
+atomr-ontology-query = { workspace = true }
+atomr-ontology-import = { workspace = true }
+atomr-ontology-viz = { workspace = true }
+atomr-ontology-shacl = { workspace = true }
+atomr-ontology-remote = { workspace = true, features = ["client"], default-features = false }
 
 [features]
 default = []
+
+# HTTP driver opt-in (does not require atomr-infer).
+http-driver = ["atomr-ontology/http-driver"]
 
 # Provider opt-ins — each maps to one upstream atomr-infer provider.
 # Selecting any of them pulls the umbrella's `infer` feature which

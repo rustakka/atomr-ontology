@@ -24,5 +24,12 @@ ntriples = []
 # JSON-LD serializer.
 jsonld = []
 
+[dev-dependencies]
+criterion = { workspace = true }
+
 [lints]
 workspace = true
+
+[[bench]]
+name = "rdf_io"
+harness = false

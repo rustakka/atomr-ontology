@@ -24,6 +24,13 @@ atomr-ontology-testkit = { workspace = true, optional = true }
 atomr-infer = { workspace = true, optional = true }
 atomr-agents = { workspace = true, optional = true }
 
+# HTTP-based driver dependencies (only pulled with the `http-driver` feature).
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
+async-trait = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+
 [features]
 default = ["rdf", "provenance", "store", "extract", "induce", "validate", "org"]
 
@@ -52,6 +59,20 @@ provider-cudarc = ["infer", "atomr-infer/cudarc"]
 
 # Agent integration (Tool / Callable adapters).
 agents = ["dep:atomr-agents", "extract"]
+
+# HTTP driver: OpenAI / Anthropic / LiteLLM (and OpenAI-compatible
+# proxies like vLLM). Calls go straight to the upstream REST API; no
+# atomr-infer dependency required. Useful for hosted models and
+# environments where shipping the heavier atomr-infer providers is
+# undesirable.
+http-driver = [
+    "extract",
+    "dep:reqwest",
+    "dep:async-trait",
+    "dep:tokio",
+    "dep:serde",
+    "dep:serde_json",
+]
 
 [lints]
 workspace = true

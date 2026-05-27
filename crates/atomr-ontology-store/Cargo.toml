@@ -26,6 +26,11 @@ tokio = ["dep:tokio"]
 
 [dev-dependencies]
 tokio = { workspace = true }
+criterion = { workspace = true }
 
 [lints]
 workspace = true
+
+[[bench]]
+name = "store_throughput"
+harness = false

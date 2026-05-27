@@ -1,0 +1,21 @@
+[package]
+name = "atomr-ontology-reason"
+description = "Forward-chaining reasoner over OWL 2 RL / EL fragments."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+
+[dependencies]
+atomr-ontology-core = { workspace = true }
+atomr-ontology-provenance = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[lints]
+workspace = true

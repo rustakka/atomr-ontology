@@ -432,6 +432,42 @@ pub fn jsonld_write(ontology: &PyOntology) -> String {
     jsonld::write(&ontology.inner)
 }
 
+/// Parse a Turtle document into a triple stream.
+#[pyfunction]
+pub fn turtle_parse(input: &str) -> PyResult<Vec<PyTriple>> {
+    turtle::parse(input).map(|ts| ts.into_iter().map(PyTriple::from).collect()).map_err(adapter_err)
+}
+
+/// Parse a Turtle document into an `Ontology` (partial: T-Box + IRI instances).
+#[pyfunction]
+pub fn turtle_read(input: &str) -> PyResult<PyOntology> {
+    turtle::read(input).map(PyOntology::from).map_err(adapter_err)
+}
+
+/// Parse an N-Triples document into a triple stream.
+#[pyfunction]
+pub fn ntriples_parse(input: &str) -> PyResult<Vec<PyTriple>> {
+    ntriples::parse(input).map(|ts| ts.into_iter().map(PyTriple::from).collect()).map_err(adapter_err)
+}
+
+/// Parse an N-Triples document into an `Ontology`.
+#[pyfunction]
+pub fn ntriples_read(input: &str) -> PyResult<PyOntology> {
+    ntriples::read(input).map(PyOntology::from).map_err(adapter_err)
+}
+
+/// Parse a JSON-LD document into a triple stream.
+#[pyfunction]
+pub fn jsonld_parse(input: &str) -> PyResult<Vec<PyTriple>> {
+    jsonld::parse(input).map(|ts| ts.into_iter().map(PyTriple::from).collect()).map_err(adapter_err)
+}
+
+/// Parse a JSON-LD document into an `Ontology`.
+#[pyfunction]
+pub fn jsonld_read(input: &str) -> PyResult<PyOntology> {
+    jsonld::read(input).map(PyOntology::from).map_err(adapter_err)
+}
+
 // Helper: construct an Iri without raising — used for shorter examples.
 #[pyfunction]
 fn iri_unchecked(value: &str) -> PyIri {
@@ -452,6 +488,12 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(turtle_write, m)?)?;
     m.add_function(wrap_pyfunction!(ntriples_write, m)?)?;
     m.add_function(wrap_pyfunction!(jsonld_write, m)?)?;
+    m.add_function(wrap_pyfunction!(turtle_parse, m)?)?;
+    m.add_function(wrap_pyfunction!(turtle_read, m)?)?;
+    m.add_function(wrap_pyfunction!(ntriples_parse, m)?)?;
+    m.add_function(wrap_pyfunction!(ntriples_read, m)?)?;
+    m.add_function(wrap_pyfunction!(jsonld_parse, m)?)?;
+    m.add_function(wrap_pyfunction!(jsonld_read, m)?)?;
     m.add_function(wrap_pyfunction!(iri_unchecked, m)?)?;
     Ok(())
 }

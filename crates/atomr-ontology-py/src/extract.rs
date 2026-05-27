@@ -12,6 +12,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyType};
 
 use atomr_ontology::extract::{
+    backend::{CachePolicy, CachedBackend},
     pipeline::ExtractStage, Backend, EntityCandidate, EntityResolver, Prompt, RecordExtractor,
     RelationCandidate, RelationExtractor, TermCandidate, TermExtractor,
 };
@@ -46,6 +47,51 @@ impl PyBackend {
 
     fn __repr__(&self) -> String {
         format!("Backend(label={:?})", self.inner.label())
+    }
+
+    /// Issue a single completion (awaitable). Useful for testing.
+    fn complete<'py>(&self, py: Python<'py>, prompt: PyPrompt) -> PyResult<Bound<'py, PyAny>> {
+        let inner = self.inner.clone();
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            inner.complete(prompt.inner).await.map_err(backend_err)
+        })
+    }
+
+    /// Issue a batch of completions concurrently (awaitable).
+    fn batch_complete<'py>(
+        &self,
+        py: Python<'py>,
+        prompts: Vec<PyPrompt>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let inner = self.inner.clone();
+        let raw: Vec<_> = prompts.into_iter().map(|p| p.inner).collect();
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let results = inner.batch_complete(raw).await;
+            let out: Vec<Result<String, atomr_ontology::extract::BackendError>> = results;
+            // Surface per-prompt errors as Python tuples (ok, text_or_err).
+            let normalized: Vec<(bool, String)> = out
+                .into_iter()
+                .map(|r| match r {
+                    Ok(s) => (true, s),
+                    Err(e) => (false, e.to_string()),
+                })
+                .collect();
+            Ok(normalized)
+        })
+    }
+
+    /// Wrap this backend in an LRU cache of the given capacity.
+    fn with_lru_cache(&self, capacity: usize) -> PyBackend {
+        let cached: CachedBackend<Arc<dyn Backend>> =
+            CachedBackend::new(self.inner.clone(), CachePolicy::Lru(capacity));
+        PyBackend { inner: Arc::new(cached) }
+    }
+
+    /// Wrap this backend in an unbounded content-addressed cache.
+    fn with_content_cache(&self) -> PyBackend {
+        let cached: CachedBackend<Arc<dyn Backend>> =
+            CachedBackend::new(self.inner.clone(), CachePolicy::ContentAddressed);
+        PyBackend { inner: Arc::new(cached) }
     }
 }
 

@@ -22,8 +22,9 @@ being learned.
 
 ## Backend contract
 
-Each extractor consumes an `Arc<dyn Backend>`. `Backend` is a
-trait with one method:
+Each extractor consumes an `Arc<dyn Backend>`. The trait is defined
+in [`crates/atomr-ontology-extract/src/backend.rs`](../crates/atomr-ontology-extract/src/backend.rs)
+and centers on one async method:
 
 ```rust
 async fn complete(&self, prompt: Prompt) -> Result<String, BackendError>;
@@ -34,14 +35,59 @@ advisory `max_tokens`. Implementations of `Backend` are:
 
 - `MockBackend` (from `atomr-ontology-testkit`) — replays a queue
   of pre-scripted responses; the default in CI.
-- `InferBackend` (from `atomr-ontology::infer_integration`) —
-  wraps a driver that owns an `atomr_infer::ModelRunner` (vLLM,
-  TensorRT, ONNX, Candle, Cudarc, Mistral.rs, OpenAI, Anthropic,
-  Gemini, LiteLLM, etc.). See [`providers.md`](providers.md).
+- `HttpDriver` (from `atomr-ontology::http_driver`, feature
+  `http-driver`) — direct HTTP to OpenAI Chat Completions,
+  Anthropic Messages, or any OpenAI-compatible / LiteLLM endpoint.
+  Reads `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `LITELLM_API_KEY`
+  from the environment.
+- `InferBackend` (from `atomr-ontology::infer_integration`,
+  feature `infer`) — wraps a driver that owns an
+  `atomr_infer::ModelRunner` (vLLM, TensorRT, ONNX, Candle,
+  Cudarc, Mistral.rs, OpenAI, Anthropic, Gemini, LiteLLM, etc.).
+  See [`providers.md`](providers.md).
 - `AgentBackend` (from `atomr-ontology::agents_integration`) —
   wraps an opaque `atomr_agents::Agent` driver, useful when
   extraction should run inside the agents framework's harness /
   workflow runtime.
+
+### Batching, streaming, caching
+
+The trait carries three default implementations that any backend
+can override:
+
+```rust
+async fn batch_complete(&self, prompts: Vec<Prompt>)
+    -> Vec<Result<String, BackendError>>;
+
+async fn stream_complete(&self, prompt: Prompt)
+    -> Result<ChunkStream, BackendError>;
+```
+
+- **`batch_complete`** — concurrent fan-out via
+  `futures::future::join_all`. Native batch APIs (vLLM, batched
+  ONNX) should override to call their batch endpoint directly.
+- **`stream_complete`** — yields `StreamChunk { text, done }`
+  values. The default wraps `complete` and emits a single terminal
+  chunk; HTTP-SSE / WebSocket drivers should override to yield
+  incremental tokens. Returns `ChunkStream =
+  Pin<Box<dyn Stream<Item = Result<StreamChunk, BackendError>> + Send>>`.
+
+Add caching transparently by wrapping any backend:
+
+```rust
+use atomr_ontology::extract::backend::{CachePolicy, CachedBackend, lru_cached, content_cached};
+
+let cached = CachedBackend::new(my_backend, CachePolicy::Lru(256));
+// or:
+let cached = lru_cached(my_backend, 256);
+let cached = content_cached(my_backend);   // unbounded content-addressed cache
+```
+
+`CachePolicy` is `None`, `ContentAddressed` (unbounded; keyed by
+prompt hash), or `Lru(n)`. `CachedBackend` short-circuits
+`complete` on cache hits; `batch_complete` and `stream_complete`
+fall through uncached so latency-sensitive callers can decide
+whether to cache stream chunks themselves.
 
 ## Composing pipelines
 

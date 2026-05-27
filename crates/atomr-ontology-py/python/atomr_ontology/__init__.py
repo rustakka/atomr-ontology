@@ -23,14 +23,23 @@ event loop. The asyncio runtime is initialized lazily on first use.
 
 from ._atomr_ontology import (
     core,
+    embed,
     extract,
+    import_,
     induce,
     org,
+    persist,
     provenance,
+    query,
     rdf,
+    reason,
+    remote,
+    shacl,
     store,
     testkit,
     validate,
+    version,
+    viz,
 )
 from ._atomr_ontology import (
     AtomrOntologyError,
@@ -142,14 +151,23 @@ from ._atomr_ontology.testkit import (
 __all__ = [
     # submodules
     "core",
+    "embed",
     "extract",
+    "import_",
     "induce",
     "org",
+    "persist",
     "provenance",
+    "query",
     "rdf",
+    "reason",
+    "remote",
+    "shacl",
     "store",
     "testkit",
     "validate",
+    "version",
+    "viz",
     # exceptions
     "AtomrOntologyError",
     "AdapterError",

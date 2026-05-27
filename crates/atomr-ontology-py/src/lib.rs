@@ -15,18 +15,30 @@
 use pyo3::prelude::*;
 
 mod core;
+mod embed;
 mod errors;
 mod extract;
+mod import_;
 mod induce;
 mod org;
+mod persist;
 mod provenance;
+mod query;
 mod rdf;
+mod reason;
+mod remote;
+mod shacl;
 mod store;
 mod testkit;
 mod validate;
+mod version;
+mod viz;
 
 #[cfg(feature = "infer")]
 mod infer;
+
+#[cfg(feature = "http-driver")]
+mod http_driver;
 
 /// Build the top-level `_atomr_ontology` Python module.
 #[pymodule]
@@ -69,11 +81,54 @@ fn _atomr_ontology(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     testkit::register(&testkit)?;
     m.add_submodule(&testkit)?;
 
+    let viz = PyModule::new_bound(py, "viz")?;
+    viz::register(&viz)?;
+    m.add_submodule(&viz)?;
+
+    let query = PyModule::new_bound(py, "query")?;
+    query::register(&query)?;
+    m.add_submodule(&query)?;
+
+    let import_ = PyModule::new_bound(py, "import_")?;
+    import_::register(&import_)?;
+    m.add_submodule(&import_)?;
+
+    let shacl = PyModule::new_bound(py, "shacl")?;
+    shacl::register(&shacl)?;
+    m.add_submodule(&shacl)?;
+
+    let reason = PyModule::new_bound(py, "reason")?;
+    reason::register(&reason)?;
+    m.add_submodule(&reason)?;
+
+    let embed = PyModule::new_bound(py, "embed")?;
+    embed::register(&embed)?;
+    m.add_submodule(&embed)?;
+
+    let version = PyModule::new_bound(py, "version")?;
+    version::register(&version)?;
+    m.add_submodule(&version)?;
+
+    let persist = PyModule::new_bound(py, "persist")?;
+    persist::register(&persist)?;
+    m.add_submodule(&persist)?;
+
+    let remote = PyModule::new_bound(py, "remote")?;
+    remote::register(&remote)?;
+    m.add_submodule(&remote)?;
+
     #[cfg(feature = "infer")]
     {
         let infer = PyModule::new_bound(py, "infer")?;
         infer::register(&infer)?;
         m.add_submodule(&infer)?;
+    }
+
+    #[cfg(feature = "http-driver")]
+    {
+        let http_driver = PyModule::new_bound(py, "http_driver")?;
+        http_driver::register(&http_driver)?;
+        m.add_submodule(&http_driver)?;
     }
 
     // Make `from atomr_ontology._atomr_ontology import core` work
@@ -89,8 +144,19 @@ fn _atomr_ontology(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     modules.set_item("atomr_ontology._atomr_ontology.rdf", m.getattr("rdf")?)?;
     modules.set_item("atomr_ontology._atomr_ontology.org", m.getattr("org")?)?;
     modules.set_item("atomr_ontology._atomr_ontology.testkit", m.getattr("testkit")?)?;
+    modules.set_item("atomr_ontology._atomr_ontology.viz", m.getattr("viz")?)?;
+    modules.set_item("atomr_ontology._atomr_ontology.query", m.getattr("query")?)?;
+    modules.set_item("atomr_ontology._atomr_ontology.import_", m.getattr("import_")?)?;
+    modules.set_item("atomr_ontology._atomr_ontology.shacl", m.getattr("shacl")?)?;
+    modules.set_item("atomr_ontology._atomr_ontology.reason", m.getattr("reason")?)?;
+    modules.set_item("atomr_ontology._atomr_ontology.embed", m.getattr("embed")?)?;
+    modules.set_item("atomr_ontology._atomr_ontology.version", m.getattr("version")?)?;
+    modules.set_item("atomr_ontology._atomr_ontology.persist", m.getattr("persist")?)?;
+    modules.set_item("atomr_ontology._atomr_ontology.remote", m.getattr("remote")?)?;
     #[cfg(feature = "infer")]
     modules.set_item("atomr_ontology._atomr_ontology.infer", m.getattr("infer")?)?;
+    #[cfg(feature = "http-driver")]
+    modules.set_item("atomr_ontology._atomr_ontology.http_driver", m.getattr("http_driver")?)?;
 
     Ok(())
 }

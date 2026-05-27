@@ -20,5 +20,5 @@ pub mod pattern;
 pub mod r#trait;
 
 pub use mem::MemStore;
-pub use pattern::{EdgePattern, MatchRow, NodePattern, TraversalPlan, TraversalStep};
+pub use pattern::{EdgePattern, MatchRow, NodePattern, SortOrder, TraversalPlan, TraversalStep};
 pub use r#trait::{OntologyDelta, OntologyStore, StoreDiff, StoreError};

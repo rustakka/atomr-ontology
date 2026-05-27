@@ -1,0 +1,9 @@
+"""Static type stubs for atomr_ontology.import_."""
+from __future__ import annotations
+
+from .core import Ontology
+from .provenance import Activity
+
+def import_skos(turtle: str) -> tuple[Ontology, Activity]: ...
+def import_foaf(turtle: str) -> tuple[Ontology, Activity]: ...
+def import_schema_org(jsonld: str) -> tuple[Ontology, Activity]: ...

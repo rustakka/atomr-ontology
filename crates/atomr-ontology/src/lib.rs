@@ -75,3 +75,6 @@ pub mod agents_integration;
 
 #[cfg(feature = "infer")]
 pub mod infer_integration;
+
+#[cfg(feature = "http-driver")]
+pub mod http_driver;

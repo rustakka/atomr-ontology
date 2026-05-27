@@ -70,6 +70,26 @@ actually enforce: `SubClassOf`, `EquivalentClass`, `DisjointWith`,
 `Symmetric`, `Transitive`. Each axiom carries an `AxiomId`
 derived deterministically from its body so duplicates deduplicate.
 
+### JSON wire format for IDs
+
+`NodeId` / `EdgeId` / `AxiomId` / `ProvenanceId` are
+`#[serde(transparent)]` over `[u8; 32]` with a `serde_bytes`
+wrapper. That round-trips cleanly through binary formats (bincode,
+postcard, MessagePack) but not directly through JSON, since JSON
+object keys must be strings.
+
+When ids appear as **values** (e.g., `edge.source`), they
+serialize to an array of bytes; when ids appear as **map keys**
+(`Ontology::nodes: BTreeMap<NodeId, Node>`), serializing the whole
+ontology as JSON requires a flattening wire form. The
+`atomr-ontology-persist` and `atomr-ontology-remote` crates each
+ship one — both flatten `BTreeMap<IdType, V>` to `Vec<V>` (since
+the value already carries its id) and hex-encode the few remaining
+id-keyed maps in `ProvenanceLog`. See
+[`crates/atomr-ontology-persist/src/wire.rs`](../crates/atomr-ontology-persist/src/wire.rs)
+and the `Wire*` mirrors in
+[`crates/atomr-ontology-remote/src/protocol.rs`](../crates/atomr-ontology-remote/src/protocol.rs).
+
 ## RDF/OWL projection (adapter)
 
 `atomr-ontology-rdf` provides two functions:

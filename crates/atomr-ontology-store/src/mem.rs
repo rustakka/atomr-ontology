@@ -15,8 +15,43 @@ use parking_lot::RwLock;
 use atomr_ontology_core::{Axiom, Edge, EdgeId, Node, NodeId, Ontology, PropertyValue};
 use atomr_ontology_provenance::{Activity, ProvenanceId, ProvenanceLog};
 
-use crate::pattern::{EdgePattern, MatchRow, NodePattern, TraversalPlan};
+use crate::pattern::{EdgePattern, MatchRow, NodePattern, SortOrder, TraversalPlan};
 use crate::r#trait::{OntologyDelta, OntologyStore, StoreDiff, StoreError};
+
+/// Apply ORDER BY / SKIP / LIMIT / RETURN projection from the plan.
+pub(crate) fn apply_ordering_and_projection(rows: &mut Vec<MatchRow>, plan: &TraversalPlan) {
+    if !plan.order.is_empty() {
+        rows.sort_by(|a, b| {
+            for (binding, ord) in &plan.order {
+                let av = a.nodes.get(binding.as_str()).copied();
+                let bv = b.nodes.get(binding.as_str()).copied();
+                let cmp = av.cmp(&bv);
+                if cmp != std::cmp::Ordering::Equal {
+                    return match ord {
+                        SortOrder::Ascending => cmp,
+                        SortOrder::Descending => cmp.reverse(),
+                    };
+                }
+            }
+            std::cmp::Ordering::Equal
+        });
+    }
+    if plan.skip > 0 {
+        let drop = plan.skip.min(rows.len());
+        rows.drain(..drop);
+    }
+    if let Some(n) = plan.limit {
+        rows.truncate(n);
+    }
+    if !plan.return_columns.is_empty() {
+        let allowed: std::collections::BTreeSet<&str> =
+            plan.return_columns.iter().map(String::as_str).collect();
+        for row in rows.iter_mut() {
+            row.nodes.retain(|k, _| allowed.contains(k.as_str()));
+            row.edges.retain(|k, _| allowed.contains(k.as_str()));
+        }
+    }
+}
 
 /// In-memory ontology store. Cheap to `clone`; shares the same
 /// underlying state.
@@ -69,6 +104,14 @@ impl MemStore {
             if node.properties.get(k) != Some(v) {
                 return false;
             }
+        }
+        // OR-branches: at least one must match if any present.
+        if !pattern.or.is_empty() && !pattern.or.iter().any(|alt| Self::match_node(node, alt)) {
+            return false;
+        }
+        // NOT-branches: none may match.
+        if pattern.not.iter().any(|neg| Self::match_node(node, neg)) {
+            return false;
         }
         true
     }
@@ -125,6 +168,9 @@ impl OntologyStore for MemStore {
                 out.push(row);
             }
         }
+        // Sort by node id for deterministic ordering before any caller-
+        // applied LIMIT logic.
+        out.sort_by(|a, b| a.nodes.values().next().cmp(&b.nodes.values().next()));
         Ok(out)
     }
 
@@ -143,34 +189,75 @@ impl OntologyStore for MemStore {
 
         for step in &plan.steps {
             let mut next = Vec::new();
-            for (row, current) in frontier.drain(..) {
-                let candidates: Vec<&Edge> = if step.outbound {
-                    guard.ontology.edges.values().filter(|e| e.source == current).collect()
-                } else {
-                    guard.ontology.edges.values().filter(|e| e.target == current).collect()
-                };
-                for edge in candidates {
-                    if !Self::match_edge(edge, &step.edge) {
-                        continue;
+            for (row, start) in frontier.drain(..) {
+                // Variable-length matching: if `edge.repeat` is set,
+                // expand from `start` over `min..=max` hops following
+                // the same edge constraint, then require the terminal
+                // node to match `step.target` before binding.
+                let range = step.edge.repeat.clone().unwrap_or(1..=1);
+                let mut visited: std::collections::HashSet<NodeId> = std::collections::HashSet::new();
+                visited.insert(start);
+                let mut layer: Vec<(MatchRow, NodeId, Option<EdgeId>)> = vec![(row.clone(), start, None)];
+                // Track per-row layer for each depth so we can emit
+                // results at any depth within the range.
+                let min = *range.start();
+                let max = *range.end();
+                let mut emitted = false;
+                for depth in 0..=max {
+                    // Emit rows from this depth if depth ∈ [min, max] AND
+                    // (for repeated edges) depth > 0 (zero-length paths
+                    // imply unchanged frontier — we still emit if seed
+                    // already matches step.target and min == 0).
+                    if depth >= min {
+                        for (acc_row, cur, last_edge) in &layer {
+                            let Some(target_node) = guard.ontology.node(cur) else { continue };
+                            if !Self::match_node(target_node, &step.target) {
+                                continue;
+                            }
+                            let mut nr = acc_row.clone();
+                            if let (Some(name), Some(eid)) = (&step.edge.bind, last_edge) {
+                                nr = nr.bind_edge(name.clone(), *eid);
+                            }
+                            if let Some(name) = &step.target.bind {
+                                nr = nr.bind_node(name.clone(), *cur);
+                            }
+                            next.push((nr, *cur));
+                            emitted = true;
+                        }
                     }
-                    let target = if step.outbound { edge.target } else { edge.source };
-                    let Some(target_node) = guard.ontology.node(&target) else { continue };
-                    if !Self::match_node(target_node, &step.target) {
-                        continue;
+                    if depth == max {
+                        break;
                     }
-                    let mut next_row = row.clone();
-                    if let Some(name) = &step.edge.bind {
-                        next_row = next_row.bind_edge(name.clone(), edge.id);
+                    let mut next_layer = Vec::new();
+                    for (acc_row, cur, _) in &layer {
+                        let candidates: Vec<&Edge> = if step.outbound {
+                            guard.ontology.edges.values().filter(|e| e.source == *cur).collect()
+                        } else {
+                            guard.ontology.edges.values().filter(|e| e.target == *cur).collect()
+                        };
+                        for edge in candidates {
+                            if !Self::match_edge(edge, &step.edge) {
+                                continue;
+                            }
+                            let target = if step.outbound { edge.target } else { edge.source };
+                            if !visited.insert(target) {
+                                continue; // cycle prevention
+                            }
+                            next_layer.push((acc_row.clone(), target, Some(edge.id)));
+                        }
                     }
-                    if let Some(name) = &step.target.bind {
-                        next_row = next_row.bind_node(name.clone(), target);
+                    layer = next_layer;
+                    if layer.is_empty() {
+                        break;
                     }
-                    next.push((next_row, target));
                 }
+                let _ = emitted; // suppress unused warning if min == 0
             }
             frontier = next;
         }
-        Ok(frontier.into_iter().map(|(row, _)| row).collect())
+        let mut rows: Vec<MatchRow> = frontier.into_iter().map(|(row, _)| row).collect();
+        apply_ordering_and_projection(&mut rows, plan);
+        Ok(rows)
     }
 
     async fn snapshot(&self) -> Result<Ontology, StoreError> {
@@ -279,6 +366,109 @@ mod tests {
         assert!(!rows.is_empty());
         assert!(rows[0].nodes.contains_key("a"));
         assert!(rows[0].nodes.contains_key("b"));
+    }
+
+    #[tokio::test]
+    async fn variable_length_path() {
+        let store = MemStore::new();
+        store.with_mut(|o| {
+            o.declare_node_type("Class");
+            o.declare_edge_type("subClassOf");
+        });
+        let a = store.upsert_node(Node::new("Class").with_property("name", "A")).await.unwrap();
+        let b = store.upsert_node(Node::new("Class").with_property("name", "B")).await.unwrap();
+        let c = store.upsert_node(Node::new("Class").with_property("name", "C")).await.unwrap();
+        store.upsert_edge(Edge::between(a, "subClassOf", b)).await.unwrap();
+        store.upsert_edge(Edge::between(b, "subClassOf", c)).await.unwrap();
+
+        // 1..=2 hops from A: should reach B (1 hop) and C (2 hops).
+        let plan = TraversalPlan::from(NodePattern::any().bind("start").typed("Class").with_property("name", "A"))
+            .outbound(
+                EdgePattern::any().labeled("subClassOf").repeat(1..=2),
+                NodePattern::any().bind("end"),
+            );
+        let rows = store.traverse(&plan).await.unwrap();
+        assert_eq!(rows.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn or_alternative_in_node_pattern() {
+        let store = MemStore::new();
+        store.with_mut(|o| {
+            o.declare_node_type("Organization");
+            o.declare_node_type("Person");
+        });
+        store.upsert_node(Node::new("Organization").with_property("name", "Acme")).await.unwrap();
+        store.upsert_node(Node::new("Person").with_property("name", "Bob")).await.unwrap();
+        store.upsert_node(Node::new("Person").with_property("name", "Carol")).await.unwrap();
+
+        // OR: name == "Acme" OR name == "Carol".
+        let p = NodePattern::any()
+            .bind("x")
+            .or(NodePattern::any().with_property("name", "Acme"))
+            .or(NodePattern::any().with_property("name", "Carol"));
+        let rows = store.match_pattern(&p).await.unwrap();
+        assert_eq!(rows.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn not_excludes_matches() {
+        let store = MemStore::new();
+        store.with_mut(|o| {
+            o.declare_node_type("Person");
+        });
+        store.upsert_node(Node::new("Person").with_property("name", "Alice")).await.unwrap();
+        store.upsert_node(Node::new("Person").with_property("name", "Bob")).await.unwrap();
+
+        // typed Person AND NOT name == "Bob".
+        let p = NodePattern::any()
+            .typed("Person")
+            .not(NodePattern::any().with_property("name", "Bob"));
+        let rows = store.match_pattern(&p).await.unwrap();
+        assert_eq!(rows.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn limit_and_order_by() {
+        let store = MemStore::new();
+        store.with_mut(|o| {
+            o.declare_node_type("Organization");
+            o.declare_edge_type("partner");
+        });
+        let a = store.upsert_node(Node::new("Organization").with_property("n", "A")).await.unwrap();
+        let b = store.upsert_node(Node::new("Organization").with_property("n", "B")).await.unwrap();
+        let c = store.upsert_node(Node::new("Organization").with_property("n", "C")).await.unwrap();
+        store.upsert_edge(Edge::between(a, "partner", b)).await.unwrap();
+        store.upsert_edge(Edge::between(a, "partner", c)).await.unwrap();
+
+        let plan = TraversalPlan::from(NodePattern::any().bind("a").typed("Organization").with_property("n", "A"))
+            .outbound(EdgePattern::any().labeled("partner"), NodePattern::any().bind("b"))
+            .order_by("b")
+            .limit(1);
+        let rows = store.traverse(&plan).await.unwrap();
+        assert_eq!(rows.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn projection_strips_other_columns() {
+        let store = MemStore::new();
+        store.with_mut(|o| {
+            o.declare_node_type("Org");
+            o.declare_edge_type("memberOf");
+        });
+        let x = store.upsert_node(Node::new("Org")).await.unwrap();
+        let y = store.upsert_node(Node::new("Org")).await.unwrap();
+        store.upsert_edge(Edge::between(x, "memberOf", y)).await.unwrap();
+        let plan = TraversalPlan::from(NodePattern::any().bind("a").typed("Org"))
+            .outbound(
+                EdgePattern::any().bind("e").labeled("memberOf"),
+                NodePattern::any().bind("b"),
+            )
+            .return_(["a"]);
+        let rows = store.traverse(&plan).await.unwrap();
+        assert!(rows.iter().all(|r| r.nodes.contains_key("a")));
+        assert!(rows.iter().all(|r| !r.nodes.contains_key("b")));
+        assert!(rows.iter().all(|r| !r.edges.contains_key("e")));
     }
 
     #[tokio::test]

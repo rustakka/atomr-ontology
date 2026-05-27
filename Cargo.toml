@@ -12,6 +12,15 @@ members = [
     "crates/atomr-ontology-org",
     "crates/atomr-ontology",
     "crates/atomr-ontology-py",
+    "crates/atomr-ontology-persist",
+    "crates/atomr-ontology-reason",
+    "crates/atomr-ontology-embed",
+    "crates/atomr-ontology-version",
+    "crates/atomr-ontology-query",
+    "crates/atomr-ontology-remote",
+    "crates/atomr-ontology-import",
+    "crates/atomr-ontology-viz",
+    "crates/atomr-ontology-shacl",
     "examples/org_ontology_demo",
     "examples/auto_extract_from_text",
     "xtask",
@@ -80,6 +89,15 @@ atomr-ontology-validate = { path = "crates/atomr-ontology-validate", version = "
 atomr-ontology-testkit = { path = "crates/atomr-ontology-testkit", version = "0.1.0" }
 atomr-ontology-org = { path = "crates/atomr-ontology-org", version = "0.1.0" }
 atomr-ontology = { path = "crates/atomr-ontology", version = "0.1.0" }
+atomr-ontology-persist = { path = "crates/atomr-ontology-persist", version = "0.1.0" }
+atomr-ontology-reason = { path = "crates/atomr-ontology-reason", version = "0.1.0" }
+atomr-ontology-embed = { path = "crates/atomr-ontology-embed", version = "0.1.0" }
+atomr-ontology-version = { path = "crates/atomr-ontology-version", version = "0.1.0" }
+atomr-ontology-query = { path = "crates/atomr-ontology-query", version = "0.1.0" }
+atomr-ontology-remote = { path = "crates/atomr-ontology-remote", version = "0.1.0" }
+atomr-ontology-import = { path = "crates/atomr-ontology-import", version = "0.1.0" }
+atomr-ontology-viz = { path = "crates/atomr-ontology-viz", version = "0.1.0" }
+atomr-ontology-shacl = { path = "crates/atomr-ontology-shacl", version = "0.1.0" }
 
 # Upstream sibling crates (optional, behind feature flags).
 # Pinned to published crates.io versions — no path dependencies.
