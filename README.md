@@ -157,6 +157,9 @@ asyncio.run(main())
 - [`docs/importers.md`](docs/importers.md) — bulk SKOS / FOAF /
   schema.org ingestion.
 - [`docs/shacl.md`](docs/shacl.md) — `Schema` ↔ SHACL Turtle.
+- [`docs/actor-projection.md`](docs/actor-projection.md) — project
+  actor-system persistence data (supervision paths, journal events,
+  serialized state) into an `OntologyStore`.
 
 **Operations**
 - [`docs/providers.md`](docs/providers.md) — how to point at any
