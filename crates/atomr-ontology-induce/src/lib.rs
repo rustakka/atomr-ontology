@@ -15,9 +15,13 @@
 #![forbid(unsafe_code)]
 
 pub mod axioms;
+pub mod axioms_agentic;
 pub mod concepts;
 pub mod taxonomy;
+pub mod taxonomy_agentic;
 
 pub use axioms::AxiomMiner;
+pub use axioms_agentic::AgenticAxiomMiner;
 pub use concepts::{ConceptCluster, ConceptFormer};
 pub use taxonomy::{SubclassProposal, TaxonomyInducer};
+pub use taxonomy_agentic::AgenticTaxonomyInducer;

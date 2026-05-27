@@ -104,12 +104,26 @@ without ever calling the extractors.
 ## Backend abstraction
 
 Each extractor depends on a narrow `Backend` trait (one async
-`complete(prompt) -> String` method). This deliberately stays
-smaller than `atomr_agents::InferenceClient` and
-`atomr_infer::ModelRunner` so the workspace is decoupled from
-the upstream generics machinery. Adapters live in the umbrella
-facade (`atomr_ontology::agents_integration`,
-`atomr_ontology::infer_integration`) behind cargo features.
+`complete(prompt) -> String` method). The trait stays deliberately
+smaller than `atomr_agents::Agent` or `atomr_infer::Provider` so the
+workspace is decoupled from upstream generics churn and so the
+testkit can plug in a deterministic mock without dragging in the full
+runtime stack.
+
+The recommended layering for agentic workflows is
+**`Backend ← AgentBackend ← atomr_agents::Agent ← atomr_infer::Provider`**:
+extractors hold an `Arc<dyn Backend>`, `AgentBackend` (in
+`atomr_ontology::agents_integration`) drives an `atomr_agents::Agent`,
+and the agent uses an `atomr_infer` provider for the underlying
+inference call. For multi-turn / tool-using workflows
+(`AgenticTaxonomyInducer`, `AgenticAxiomMiner` in
+`atomr-ontology-induce`), the same module exposes `AgenticAgent` /
+`AgenticDriver` / `ToolSpec` — defined in
+`atomr-ontology-extract::agentic` so the workflow crates can use them
+directly. Direct seams (`InferBackend`, `MockBackend`) and the
+deprecated `HttpDriver` (slated for removal in 0.4) live on the same
+`Backend` trait. See [`providers.md`](providers.md) for the decision
+tree and [`agents.md`](agents.md) for the agent-loop semantics.
 
 ## Why labeled property graph as canonical?
 

@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Recommended provider layering documented end-to-end.** The canonical
+  stack is `Backend ← AgentBackend ← atomr_agents::Agent ←
+  atomr_infer::Provider`. New top-level diagrams in `README.md` and
+  `docs/providers.md`, decision tree in `docs/providers.md`, and
+  reframed `docs/agents.md` / `docs/architecture.md` /
+  `docs/getting-started.md` / `docs/python.md` /
+  `docs/migration-0.1-to-0.2.md` plus per-crate READMEs all point at
+  the same canonical wiring.
+- **Agentic surface** (`atomr-ontology-extract::agentic`,
+  re-exported from `atomr-ontology::agents_integration`): new
+  `AgenticDriver` trait, `AgenticAgent`, `AgenticSession`,
+  `AgenticOutcome`, `ToolSpec`, `ToolCallRecord`, `TurnRecord`,
+  `StopCondition` types. `AgenticAgent` also implements `Backend` so
+  it's a drop-in for the existing single-turn extractors.
+- **Built-in `OntologyStore` tool palette**
+  (`atomr-ontology-extract::store_tools::default_store_tools`):
+  `class_exists`, `list_classes`, `list_edge_types`,
+  `count_instances`, `subclasses_of`, `supertypes_of`,
+  `properties_of`. Hand the palette to an `AgenticAgent` to give it
+  live introspection over the in-flight ontology.
+- **Agentic inducers** (`atomr-ontology-induce`):
+  `AgenticTaxonomyInducer` and `AgenticAxiomMiner`. Multi-turn,
+  tool-using variants of the existing one-shot inducers; each emits
+  a PROV-O `Activity` tagged with the session's `tool_calls` and
+  `turns` counts.
+- **`agents-with-*` umbrella meta-features**:
+  `agents-with-infer`, `agents-with-openai`, `agents-with-anthropic`,
+  `agents-with-gemini`, `agents-with-litellm`, `agents-with-vllm`,
+  `agents-with-candle`. Bundle the agent surface with a matching
+  `atomr-infer` provider so the recommended stack compiles in one
+  shot. Python parity via the matching pip extras.
+- **`atomr-ontology-py.agents`**: PyO3 submodule exposing
+  `AgenticAgent`, `AgenticSession`, `ToolSpec`, `AgenticOutcome`,
+  `TurnRecord`, `ToolCallRecord`, `StopCondition`,
+  `AgenticTaxonomyInducer`, `AgenticAxiomMiner`, and
+  `default_store_tools_py`. Build with the `agents` feature.
+- **`examples/http_driver_migration.rs`**: walkthrough of replacing
+  the deprecated `HttpDriver` with `InferBackend` (single-shot) or
+  `AgentBackend` (recommended agentic layering).
+
+### Deprecated
+- **`HttpDriver` and the `http-driver` feature** (Rust + Python).
+  Slated for removal in 0.4. The direct-REST shim is superseded by
+  `InferBackend` over `atomr-infer`'s remote providers
+  (`provider-openai`, `provider-anthropic`, `provider-litellm`), or
+  — for the recommended layering — `AgentBackend` over an
+  `atomr_agents::Agent` whose inference goes through `atomr-infer`.
+  Construction emits a `#[deprecated]` warning in Rust and a
+  `DeprecationWarning` in Python. Existing callers keep working
+  through the deprecation window; see
+  [`docs/providers.md`](docs/providers.md#http-driver) for the
+  migration recipe and
+  [`crates/atomr-ontology/examples/http_driver_migration.rs`](crates/atomr-ontology/examples/http_driver_migration.rs)
+  for a worked example.
+
 - **RDF read parsers** (`atomr-ontology-rdf`): `turtle::parse/read`,
   `ntriples::parse/read`, `jsonld::parse/read` round-trip the existing
   writers; T-Box and IRI-typed instances are reconstructed via

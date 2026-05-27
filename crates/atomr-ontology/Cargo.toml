@@ -45,7 +45,7 @@ org = ["dep:atomr-ontology-org"]
 testkit = ["dep:atomr-ontology-testkit", "extract"]
 
 # Provider re-exports (delegate to atomr-infer's feature flags).
-infer = ["dep:atomr-infer"]
+infer = ["dep:atomr-infer", "dep:async-trait"]
 provider-openai = ["infer", "atomr-infer/openai"]
 provider-anthropic = ["infer", "atomr-infer/anthropic"]
 provider-gemini = ["infer", "atomr-infer/gemini"]
@@ -57,14 +57,33 @@ provider-tensorrt = ["infer", "atomr-infer/tensorrt"]
 provider-mistralrs = ["infer", "atomr-infer/mistralrs"]
 provider-cudarc = ["infer", "atomr-infer/cudarc"]
 
-# Agent integration (Tool / Callable adapters).
-agents = ["dep:atomr-agents", "extract"]
+# Agent integration (single-turn AgentBackend + multi-turn AgenticAgent
+# adapters). Independent of `infer` so callers can drive an agent against
+# any backend, but the recommended layering for agentic ontology
+# workflows is `agents` + an `atomr-infer` provider via one of the
+# `agents-with-*` meta-features below.
+agents = ["dep:atomr-agents", "dep:async-trait", "extract"]
 
-# HTTP driver: OpenAI / Anthropic / LiteLLM (and OpenAI-compatible
-# proxies like vLLM). Calls go straight to the upstream REST API; no
-# atomr-infer dependency required. Useful for hosted models and
-# environments where shipping the heavier atomr-infer providers is
-# undesirable.
+# Recommended-composition meta-features. These do NOT enforce a Cargo
+# dependency from `atomr-agents` to `atomr-infer` (those are external,
+# independent crates) — they only guarantee the user can build an
+# `AgenticDriver` that calls into an `InferBackend` underneath without
+# manually composing two feature sets.
+agents-with-infer       = ["agents", "infer"]
+agents-with-openai      = ["agents", "provider-openai"]
+agents-with-anthropic   = ["agents", "provider-anthropic"]
+agents-with-gemini      = ["agents", "provider-gemini"]
+agents-with-litellm     = ["agents", "provider-litellm"]
+agents-with-vllm        = ["agents", "provider-vllm"]
+agents-with-candle      = ["agents", "provider-candle"]
+
+# DEPRECATED in 0.2 — slated for removal in 0.4. The recommended
+# replacement is `provider-openai` / `provider-anthropic` /
+# `provider-litellm` (each pulls `atomr-infer` and the matching upstream
+# provider), wired through `InferBackend` or `AgentBackend`. Kept here
+# so existing builds keep working through the deprecation window. See
+# `crates/atomr-ontology/src/http_driver.rs` and
+# `crates/atomr-ontology/examples/http_driver_migration.rs`.
 http-driver = [
     "extract",
     "dep:reqwest",
@@ -73,6 +92,10 @@ http-driver = [
     "dep:serde",
     "dep:serde_json",
 ]
+
+[dev-dependencies]
+tokio = { workspace = true }
+async-trait = { workspace = true }
 
 [lints]
 workspace = true

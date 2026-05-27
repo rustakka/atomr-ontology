@@ -78,7 +78,12 @@ To add a new source, ingest mode, or projection shape, implement the correspondi
 ## Crate features
 
 - `snapshot-source` — enable `SnapshotActorPersistenceSource`, which wraps any `Checkpointer` whose snapshots already store actor records as ontology nodes.
-- `agents` — reserved for future direct integration with `atomr-agents`.
+- `agents` — reserved for future direct projection hooks into
+  `atomr-agents`. The umbrella crate's `AgentBackend` /
+  `AgenticAgent` (which wrap `atomr_agents::Agent` and dispatch
+  inference through `atomr_infer::Provider`) are the canonical seam
+  for driving extractors today; see
+  [`docs/providers.md`](../../docs/providers.md#provider-selection).
 
 ## See also
 

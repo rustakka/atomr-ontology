@@ -8,8 +8,11 @@ workspace.
 
 None. The crate ships a deterministic `HashEmbedder` for tests; a
 real embedding provider plugs in by implementing
-`EmbeddingBackend` (typically wrapping `atomr-infer` or a hosted
-embedding API).
+`EmbeddingBackend`. The canonical wiring mirrors the rest of the
+workspace: wrap an `atomr_infer::Provider` for embeddings rather than
+hand-rolling a REST client. See
+[`docs/providers.md`](../../docs/providers.md#provider-selection) for
+the full layering and decision tree.
 
 ## Example
 

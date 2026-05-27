@@ -14,13 +14,19 @@
 
 #![forbid(unsafe_code)]
 
+pub mod agentic;
 pub mod backend;
 pub mod entities;
 pub mod pipeline;
 pub mod records;
 pub mod relations;
+pub mod store_tools;
 pub mod terms;
 
+pub use agentic::{
+    AgenticAgent, AgenticDriver, AgenticOutcome, AgenticSession, StopCondition, ToolCallRecord,
+    ToolSpec, TurnRecord,
+};
 pub use backend::{Backend, BackendError, Prompt};
 pub use entities::{EntityCandidate, EntityResolver};
 pub use pipeline::{Callable, ExtractStage, Pipeline};

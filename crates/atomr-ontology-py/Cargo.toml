@@ -22,6 +22,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
 async-trait = { workspace = true }
+futures = { workspace = true }
 
 # Umbrella facade pulls everything we want to wrap. Default features
 # already include rdf/provenance/store/extract/induce/validate/org; we
@@ -54,7 +55,9 @@ atomr-ontology-store = { workspace = true }
 [features]
 default = []
 
-# HTTP driver opt-in (does not require atomr-infer).
+# DEPRECATED in 0.2 — slated for removal in 0.4. Prefer one of the
+# `provider-*` extras instead (each pulls `atomr-infer` and the matching
+# upstream provider). See `docs/providers.md`.
 http-driver = ["atomr-ontology/http-driver"]
 
 # Provider opt-ins — each maps to one upstream atomr-infer provider.
@@ -71,6 +74,19 @@ provider-ort        = ["infer", "atomr-ontology/provider-ort"]
 provider-tensorrt   = ["infer", "atomr-ontology/provider-tensorrt"]
 provider-mistralrs  = ["infer", "atomr-ontology/provider-mistralrs"]
 provider-cudarc     = ["infer", "atomr-ontology/provider-cudarc"]
+
+# Agentic integration — exposes the AgenticAgent / ToolSpec /
+# AgenticTaxonomyInducer / AgenticAxiomMiner Python types. The
+# `agents-with-*` meta-features bundle the agent surface with a matching
+# atomr-infer provider so the recommended layering compiles in one shot.
+agents                 = ["atomr-ontology/agents"]
+agents-with-infer      = ["agents", "infer"]
+agents-with-openai     = ["agents", "provider-openai"]
+agents-with-anthropic  = ["agents", "provider-anthropic"]
+agents-with-gemini     = ["agents", "provider-gemini"]
+agents-with-litellm    = ["agents", "provider-litellm"]
+agents-with-vllm       = ["agents", "provider-vllm"]
+agents-with-candle     = ["agents", "provider-candle"]
 
 [lints]
 workspace = true

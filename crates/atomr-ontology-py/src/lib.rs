@@ -41,6 +41,9 @@ mod infer;
 #[cfg(feature = "http-driver")]
 mod http_driver;
 
+#[cfg(feature = "agents")]
+mod agents;
+
 /// Build the top-level `_atomr_ontology` Python module.
 #[pymodule]
 fn _atomr_ontology(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -136,6 +139,13 @@ fn _atomr_ontology(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         m.add_submodule(&http_driver)?;
     }
 
+    #[cfg(feature = "agents")]
+    {
+        let agents = PyModule::new_bound(py, "agents")?;
+        agents::register(&agents)?;
+        m.add_submodule(&agents)?;
+    }
+
     // Make `from atomr_ontology._atomr_ontology import core` work
     // even when the submodule was registered via add_submodule.
     let sys = py.import_bound("sys")?;
@@ -166,6 +176,8 @@ fn _atomr_ontology(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     modules.set_item("atomr_ontology._atomr_ontology.infer", m.getattr("infer")?)?;
     #[cfg(feature = "http-driver")]
     modules.set_item("atomr_ontology._atomr_ontology.http_driver", m.getattr("http_driver")?)?;
+    #[cfg(feature = "agents")]
+    modules.set_item("atomr_ontology._atomr_ontology.agents", m.getattr("agents")?)?;
 
     Ok(())
 }

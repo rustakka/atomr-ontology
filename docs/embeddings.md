@@ -146,4 +146,8 @@ the model from hallucinating IRIs that do not exist.
 - [`agents.md`](agents.md) — pipeline stages and the `Backend`
   contract that wraps the LLM disambiguator.
 - [`providers.md`](providers.md) — how to back `EmbeddingBackend` with
-  the same `atomr-infer` runtime used by the extractors.
+  the same `atomr-infer` runtime used by the extractors (the
+  canonical layering `AgentBackend → atomr_agents::Agent →
+  atomr_infer::Provider` applies the same way for the embedding
+  provider — wrap your chosen `atomr-infer` embedding provider rather
+  than hand-rolling an HTTP client).

@@ -1,14 +1,40 @@
 //! HTTP-based [`Backend`] implementations for OpenAI / Anthropic /
 //! LiteLLM / OpenAI-compatible proxies.
 //!
-//! The driver is intentionally minimal: it speaks the chat-completions
-//! shape that all three providers expose (OpenAI's Chat Completions
-//! API and Anthropic's Messages API), reads API keys from the standard
+//! # Deprecated — prefer `atomr-infer` providers
+//!
+//! As of v0.2 this module is **deprecated** and slated for removal in
+//! v0.4. The canonical replacement is the `atomr-infer` provider matrix
+//! wired through [`InferBackend`](crate::infer_integration::InferBackend)
+//! or — for the recommended layering —
+//! [`AgentBackend`](crate::agents_integration::AgentBackend) wrapping
+//! an `atomr_agents::Agent` that itself dispatches to an `atomr-infer`
+//! provider.
+//!
+//! Migration sketch (replace `http-driver` with `provider-openai`):
+//!
+//! ```toml
+//! # Before
+//! atomr-ontology = { version = "0.2", features = ["http-driver"] }
+//!
+//! # After (recommended)
+//! atomr-ontology = { version = "0.2", features = ["agents-with-openai"] }
+//! # Or, no agent loop:
+//! atomr-ontology = { version = "0.2", features = ["provider-openai"] }
+//! ```
+//!
+//! A worked migration example lives in
+//! `examples/http_driver_migration.rs`. See `docs/providers.md` for the
+//! full decision tree.
+//!
+//! ---
+//!
+//! The legacy behaviour: this driver speaks the chat-completions shape
+//! that all three providers expose (OpenAI's Chat Completions API and
+//! Anthropic's Messages API), reads API keys from the standard
 //! environment variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
 //! `LITELLM_API_KEY` / `OPENAI_API_KEY`), and returns the assistant
-//! message text. It does not load weights, host models, or stream;
-//! callers that need richer functionality should drop in an
-//! `atomr-infer::ModelRunner` via the `infer` feature.
+//! message text. It does not load weights, host models, or stream.
 //!
 //! Concrete provider mapping:
 //!
@@ -26,6 +52,14 @@ use serde::{Deserialize, Serialize};
 use atomr_ontology_extract::backend::{Backend, BackendError, Prompt};
 
 /// Provider flavor — picks the wire shape used.
+#[deprecated(
+    since = "0.2.0",
+    note = "http_driver is deprecated and will be removed in 0.4. Use the `provider-openai` / \
+            `provider-anthropic` / `provider-litellm` features and construct an InferBackend via \
+            `atomr_ontology::infer_integration`, or wire `AgentBackend` over an \
+            `atomr_agents::Agent` for the recommended layering. See \
+            examples/http_driver_migration.rs and docs/providers.md."
+)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Flavor {
     /// OpenAI Chat Completions API.
@@ -37,6 +71,15 @@ pub enum Flavor {
 }
 
 /// HTTP-based driver implementing [`Backend`].
+#[deprecated(
+    since = "0.2.0",
+    note = "http_driver is deprecated and will be removed in 0.4. Use the `provider-openai` / \
+            `provider-anthropic` / `provider-litellm` features and construct an InferBackend via \
+            `atomr_ontology::infer_integration`, or wire `AgentBackend` over an \
+            `atomr_agents::Agent` for the recommended layering. See \
+            examples/http_driver_migration.rs and docs/providers.md."
+)]
+#[allow(deprecated)]
 pub struct HttpDriver {
     flavor: Flavor,
     client: Client,
@@ -46,11 +89,19 @@ pub struct HttpDriver {
     label: String,
 }
 
+#[allow(deprecated)]
 impl HttpDriver {
     /// Build a driver for the given provider name and model.
     ///
     /// Recognized provider names: `openai`, `anthropic`, `litellm`,
     /// `openai-compatible`. Other names produce an error.
+    #[deprecated(
+        since = "0.2.0",
+        note = "http_driver is deprecated and will be removed in 0.4. Prefer \
+                `InferBackend` over `atomr_infer` (feature `provider-openai`, \
+                `provider-anthropic`, …) or `AgentBackend` for the recommended \
+                agentic layering. See examples/http_driver_migration.rs."
+    )]
     pub fn from_provider(provider: &str, model: &str) -> Result<Self, BackendError> {
         let flavor = match provider {
             "openai" => Flavor::OpenAi,
@@ -148,6 +199,7 @@ impl HttpDriver {
     }
 }
 
+#[allow(deprecated)]
 #[async_trait]
 impl Backend for HttpDriver {
     async fn complete(&self, prompt: Prompt) -> Result<String, BackendError> {
@@ -224,6 +276,7 @@ struct AnthropicContentBlock {
 }
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use super::*;
 

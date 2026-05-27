@@ -20,6 +20,8 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
+parking_lot = { workspace = true }
+atomr-ontology-store = { workspace = true }
 
 [lints]
 workspace = true

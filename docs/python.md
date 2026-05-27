@@ -13,21 +13,32 @@ parity contract.
 ## Installation
 
 ```bash
-pip install atomr-ontology                  # core + mock backend
-pip install 'atomr-ontology[http-driver]'   # OpenAI / Anthropic / LiteLLM REST
-pip install 'atomr-ontology[anthropic]'     # atomr-infer-backed Anthropic
+pip install atomr-ontology                            # core + mock backend
+pip install 'atomr-ontology[agents-with-anthropic]'   # RECOMMENDED agentic stack
+pip install 'atomr-ontology[anthropic]'               # atomr-infer-backed, no agent loop
+pip install 'atomr-ontology[openai]'                  # atomr-infer-backed OpenAI
 ```
 
-Provider extras: `[openai]`, `[anthropic]`, `[gemini]`,
-`[litellm]`, `[vllm]`, `[candle]`, `[ort]`, `[tensorrt]`,
-`[mistralrs]`, `[http-driver]`. Each maps 1:1 to the matching
-Cargo feature on the Rust umbrella.
+Provider extras (atomr-infer providers): `[openai]`, `[anthropic]`,
+`[gemini]`, `[litellm]`, `[vllm]`, `[candle]`, `[ort]`, `[tensorrt]`,
+`[mistralrs]`. Agentic combos: `[agents-with-openai]`,
+`[agents-with-anthropic]`, `[agents-with-gemini]`,
+`[agents-with-litellm]`, `[agents-with-vllm]`,
+`[agents-with-candle]`. Each maps 1:1 to the matching Cargo feature on
+the Rust umbrella.
+
+**Deprecated:** `[http-driver]` is the direct-REST `HttpDriver`
+exposure; it's slated for removal in 0.4. Construction emits a
+`DeprecationWarning` pointing at the canonical replacement
+(`InferBackend` over the matching `provider-*` extra, or
+`AgenticAgent` for the recommended layering). See
+[`providers.md`](providers.md#http-driver) for the migration guide.
 
 Local development:
 
 ```bash
 cd crates/atomr-ontology-py
-maturin develop --features http-driver
+maturin develop --features agents-with-anthropic
 ```
 
 ## Package layout
@@ -54,8 +65,11 @@ atomr_ontology
 ├── import_      # import_skos, import_foaf, import_schema_org
 ├── shacl        # to_shacl_turtle, from_shacl_turtle
 │
-├── http_driver  # HttpDriver (extra: [http-driver])
-└── infer        # InferBackend     (extras: [openai], [anthropic], …)
+├── agents      # AgenticAgent, ToolSpec, AgenticTaxonomyInducer,
+│                # AgenticAxiomMiner, default_store_tools_py
+│                # (extras: [agents-with-anthropic], [agents-with-openai], …)
+├── infer        # InferBackend     (extras: [openai], [anthropic], …)
+└── http_driver  # HttpDriver — DEPRECATED, removed in 0.4 (extra: [http-driver])
 ```
 
 The most common types are re-exported at the top level so plain
@@ -134,20 +148,49 @@ Everything else — types, methods, modules, error variants — is
 
 ## Backends and providers
 
+The recommended layering for agentic workflows is `AgenticAgent →
+atomr_agents::Agent → atomr_infer::Provider`. The Python side is a
+thin wrapper — you implement an `AgenticDriver`-shaped class in
+Python whose `run_session(session)` and `complete_one(prompt)`
+methods drive your `atomr-agents`-backed agent, then construct an
+`AgenticAgent` over it:
+
 ```python
 import atomr_ontology as ao
+from atomr_ontology.agents import AgenticAgent, AgenticSession, default_store_tools_py
 
-mock = ao.MockBackend.with_label("demo")
-mock.enqueue('[{"surface":"Acme","score":0.9}]')
+class MyDriver:
+    async def run_session(self, session):  # session: AgenticSession
+        # Hand off to your atomr-agents-backed agent here; return an
+        # `AgenticOutcome`. See atomr-agents Python docs.
+        ...
+    async def complete_one(self, prompt):  # prompt: ao.Prompt
+        return "..."
 
-# HTTP driver (with http-driver feature):
-from atomr_ontology.http_driver import HttpDriver
-openai = HttpDriver("openai", "gpt-4o-mini").as_backend()
+agent = AgenticAgent.from_python("anthropic", MyDriver())
+
+# Drop-in single-turn use — AgenticAgent.as_backend() satisfies the
+# Backend contract that every extractor accepts.
+extractor = ao.TermExtractor(agent.as_backend())
+
+# Multi-turn / tool-using inducers.
+store = ao.MemStore.from_ontology(ao.reference_ontology())
+tools = default_store_tools_py(store)
+miner = ao.agents.AgenticAxiomMiner(agent, tools)
+proposals, activity = await miner.mine("context...")
 ```
 
-Reads `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `LITELLM_API_KEY`
-from the environment by default. See [`providers.md`](providers.md)
-for the full provider matrix.
+For tests / CI without a real LLM, use `ao.MockBackend`:
+
+```python
+mock = ao.MockBackend.with_label("demo")
+mock.enqueue('[{"surface":"Acme","score":0.9}]')
+```
+
+The deprecated `HttpDriver` still works (`extra: [http-driver]`) but
+emits a `DeprecationWarning` on construction. See
+[`providers.md`](providers.md#provider-selection) for the full
+provider matrix and the migration guide.
 
 Backends carry the same `batch_complete`, `complete`,
 `with_lru_cache`, `with_content_cache` surface as Rust:

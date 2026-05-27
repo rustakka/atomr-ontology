@@ -3,10 +3,18 @@
 Ontology engineering and ontology-learning crate for the
 [rustakka/atomr](https://github.com/rustakka/atomr) ecosystem. Build,
 manage, and reason over labeled property graphs and their RDF/OWL
-projections, with agents from
-[`atomr-agents`](https://github.com/rustakka/atomr-agents) and inference
-providers from
-[`atomr-infer`](https://github.com/rustakka/atomr-infer).
+projections.
+
+**Recommended provider layering.** Agentic ontology workflows are built on
+[`atomr-agents`](https://github.com/rustakka/atomr-agents) for the
+agent / tool / planning surface, which in turn uses
+[`atomr-infer`](https://github.com/rustakka/atomr-infer) to talk to OpenAI,
+Anthropic, Gemini, LiteLLM, Candle, vLLM, ONNX, TensorRT, Mistral.rs, and
+the rest of the provider matrix. The canonical stack is
+`Backend ← AgentBackend ← atomr_agents::Agent ← atomr_infer::Provider`
+— see the layering diagram below and
+[`docs/providers.md`](docs/providers.md#provider-selection) for the full
+decision tree.
 
 The crate ships a **canonical labeled property graph (LPG)** data model
 and a **non-canonical RDF/OWL adapter** alongside it, so authors can
@@ -38,7 +46,7 @@ example rather than a privileged core.
 | 3 | `atomr-ontology-import` | Bulk importers for SKOS, FOAF, schema.org JSON-LD. |
 | 3 | `atomr-ontology-viz` | GraphViz DOT + Mermaid renderers for ontology + provenance graphs. |
 | 3 | `atomr-ontology-shacl` | Compile `Schema` → SHACL Turtle and parse it back. |
-| 3 | `atomr-ontology` | Umbrella facade re-exporting the rest + a `prelude`. Adds optional `HttpDriver` (`http-driver` feature) for OpenAI / Anthropic / LiteLLM. |
+| 3 | `atomr-ontology` | Umbrella facade re-exporting the rest + a `prelude`. Hosts the `AgentBackend` / `AgenticAgent` adapters (`agents`) and the deprecated `HttpDriver` shim (`http-driver`, slated for removal in 0.4 — prefer `provider-*`). |
 | 3 | `atomr-ontology-py` | Python bindings (PyO3 + maturin). 1:1 parity with Rust; `.pyi` stubs ship in the wheel. Async APIs as Python coroutines. |
 
 ## Install
@@ -48,24 +56,68 @@ example rather than a privileged core.
 ```toml
 [dependencies]
 atomr-ontology = "0.1"
-# Optional features — pull only what you need.
-# atomr-ontology = { version = "0.1", features = ["http-driver", "provider-openai"] }
+
+# Recommended: agentic workflows over atomr-agents + atomr-infer.
+# atomr-ontology = { version = "0.1", features = ["agents-with-anthropic"] }
+
+# Direct atomr-infer provider, no agent loop.
+# atomr-ontology = { version = "0.1", features = ["provider-openai"] }
+
+# DEPRECATED — slated for removal in 0.4. Prefer one of the
+# `provider-*` features instead.
+# atomr-ontology = { version = "0.1", features = ["http-driver"] }
 ```
 
 **Python** (PyO3 + maturin wheel):
 
 ```bash
-pip install atomr-ontology                  # core + mock backend
-pip install 'atomr-ontology[http-driver]'   # OpenAI / Anthropic / LiteLLM REST
-pip install 'atomr-ontology[openai]'        # atomr-infer-driven OpenAI
-# Other provider extras: [anthropic] [gemini] [litellm] [vllm]
-#                       [candle] [ort] [tensorrt] [mistralrs]
+pip install atomr-ontology                       # core + mock backend
+pip install 'atomr-ontology[agents-with-anthropic]'  # recommended agentic stack
+pip install 'atomr-ontology[anthropic]'          # atomr-infer-driven Anthropic
+pip install 'atomr-ontology[openai]'             # atomr-infer-driven OpenAI
+# Other provider extras: [gemini] [litellm] [vllm] [candle] [ort]
+#                       [tensorrt] [mistralrs]
+# Other agentic combos:  [agents-with-openai] [agents-with-litellm]
+#                       [agents-with-vllm]   [agents-with-candle]
+pip install 'atomr-ontology[http-driver]'        # DEPRECATED — prefer provider-* extras
 ```
 
 A new walkthrough for both languages lives in
 [`docs/getting-started.md`](docs/getting-started.md); the Python deep
 dive (asyncio, `.pyi` stubs, parity contract) is in
 [`docs/python.md`](docs/python.md).
+
+## Provider layering
+
+```text
+agentic ontology workflow (TermExtractor, EntityResolver,
+                           RelationExtractor, AxiomMiner, ...)
+        │  takes Arc<dyn Backend>  (or Arc<AgenticAgent> for the
+        ▼                            multi-turn surface)
+   Backend trait                    (atomr-ontology-extract)
+        │
+        ▼
+   AgentBackend / AgenticAgent      (atomr-ontology, recommended)
+        │  drives
+        ▼
+   atomr_agents::Agent              (planning / tools / multi-turn)
+        │  inference via
+        ▼
+   atomr_infer::Provider            (OpenAI, Anthropic, Gemini,
+                                     LiteLLM, vLLM, Candle, ORT,
+                                     TensorRT, Mistral.rs, ...)
+        │
+        ▼
+   real model / endpoint
+```
+
+Sibling (non-recommended) seams on the same `Backend` trait:
+
+- `InferBackend` — wraps `atomr_infer::Provider` directly, skipping the agent loop. Use when you don't need tools / planning.
+- `MockBackend` (`atomr-ontology-testkit`) — scripted queue. Use in tests and CI.
+- `HttpDriver` (`http-driver` feature) — **deprecated**; will be removed in 0.4. Migrate to `provider-openai` / `provider-anthropic` / `provider-litellm`.
+
+See [`docs/providers.md`](docs/providers.md#provider-selection) for the full decision tree and the migration recipe.
 
 ## Getting started in 60 seconds
 
@@ -162,10 +214,10 @@ asyncio.run(main())
   serialized state) into an `OntologyStore`.
 
 **Operations**
-- [`docs/providers.md`](docs/providers.md) — how to point at any
-  `atomr-infer` runtime (local Candle, vLLM, ONNX, TensorRT,
-  Mistral.rs, or remote OpenAI / Anthropic / Gemini / LiteLLM) or the
-  new `http-driver` for direct REST.
+- [`docs/providers.md`](docs/providers.md) — the canonical
+  `AgentBackend → atomr_agents::Agent → atomr_infer::Provider`
+  layering, the provider-selection decision tree, and the migration
+  recipe from the deprecated `http-driver`.
 - [`docs/migration-0.1-to-0.2.md`](docs/migration-0.1-to-0.2.md) —
   upgrade path from v0.1 to the unreleased surface.
 

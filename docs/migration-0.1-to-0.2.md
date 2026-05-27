@@ -109,20 +109,36 @@ let o = atomr_ontology::rdf::turtle::read(&document)?;
 Same module structure as the writers; behind the same feature
 flags (`turtle`, `ntriples`, `jsonld`, all default-on).
 
-### HTTP driver
+### Provider layering (recommended path) + HTTP driver deprecation
 
-The v0.1 `auto_extract_from_text` example only worked with the
-mock backend. The new `http-driver` feature ships
-`HttpDriver::from_provider("openai" | "anthropic" | "litellm",
-model)` that calls REST endpoints directly without pulling in
-`atomr-infer`:
+The recommended provider layering for agentic ontology workflows is
+**`Backend ← AgentBackend ← atomr_agents::Agent ←
+atomr_infer::Provider`**. The umbrella now ships the meta-features
+`agents-with-openai`, `agents-with-anthropic`,
+`agents-with-litellm`, `agents-with-candle`, etc. that bundle the
+agent surface with a matching `atomr-infer` provider so the
+recommended stack compiles in one shot.
 
-```bash
-cargo run -p auto_extract_from_text --features http-driver -- \
-    --provider openai --model gpt-4o-mini --out-dir out
-```
+For multi-turn / tool-using induction the new
+`AgenticTaxonomyInducer` and `AgenticAxiomMiner` in
+`atomr-ontology-induce` consume an `AgenticAgent` (also in the
+umbrella's `agents_integration`). Pair them with
+`atomr_ontology::extract::store_tools::default_store_tools(store)`
+to give the agent live ontology introspection. See
+[`agents.md`](agents.md#agentic-induction) and
+[`providers.md`](providers.md#provider-selection).
 
-See [`providers.md`](providers.md#http-driver-no-atomr-infer-dep).
+**`HttpDriver` is deprecated** as of v0.2 and will be removed in v0.4.
+The direct-REST driver was introduced as a lightweight
+no-extra-deps shim; the recommended replacement is `InferBackend`
+over one of the matching `provider-*` features
+(`provider-openai`, `provider-anthropic`, `provider-litellm`), or —
+for the recommended layering — `AgentBackend` over an
+`atomr_agents::Agent` whose inference goes through `atomr-infer`.
+Construction emits a `#[deprecated]` warning in Rust and a
+`DeprecationWarning` in Python. A worked migration example lives in
+[`crates/atomr-ontology/examples/http_driver_migration.rs`](../crates/atomr-ontology/examples/http_driver_migration.rs).
+Existing callers keep working through the deprecation window.
 
 ### Other adoptable additions
 
@@ -155,12 +171,16 @@ builds are unaffected):
 
 | Feature | Pulls |
 | --- | --- |
-| `http-driver` | `reqwest`, `serde_json`, `tokio`, the new `http_driver` module |
+| `http-driver` | **DEPRECATED** (removed in 0.4). `reqwest`, `serde_json`, `tokio`, the deprecated `http_driver` module. |
 | `provider-openai` … `provider-cudarc` | `atomr-infer` plus the matching upstream feature |
+| `agents-with-openai`, `agents-with-anthropic`, `agents-with-gemini`, `agents-with-litellm`, `agents-with-vllm`, `agents-with-candle` | Meta: `agents` + the matching `provider-*` flag. Recommended for the canonical agentic stack. |
+| `agents-with-infer` | Meta: `agents` + `infer`, with no specific provider. |
 
 Existing features (`rdf`, `provenance`, `store`, `extract`,
 `induce`, `validate`, `org`, `testkit`, `infer`, `agents`)
-behave identically to v0.1.
+behave identically to v0.1. The `agents` feature additionally
+re-exports the new `AgenticAgent` / `AgenticDriver` / `ToolSpec`
+surface from `atomr-ontology-extract::agentic`.
 
 ## Verification
 

@@ -22,12 +22,16 @@ optional capabilities — for example:
 
 ```toml
 atomr-ontology = { version = "0.1", features = [
-    "http-driver",         # OpenAI / Anthropic / LiteLLM REST
-    "provider-anthropic",  # atomr-infer-backed Anthropic
+    "agents-with-anthropic",  # RECOMMENDED — AgentBackend + atomr-infer/anthropic
 ] }
+# Or, no agent loop:
+# atomr-ontology = { version = "0.1", features = ["provider-anthropic"] }
+# DEPRECATED (removed in 0.4) — prefer the provider-* features above.
+# atomr-ontology = { version = "0.1", features = ["http-driver"] }
 ```
 
-See [`providers.md`](providers.md) for the full feature matrix.
+See [`providers.md`](providers.md#provider-selection) for the full
+feature matrix and the decision tree.
 
 ### Python
 
@@ -40,8 +44,9 @@ pip install atomr-ontology
 Provider extras follow the same pattern as the Rust features:
 
 ```bash
-pip install 'atomr-ontology[http-driver]'   # REST
-pip install 'atomr-ontology[anthropic]'     # atomr-infer-backed
+pip install 'atomr-ontology[agents-with-anthropic]'  # RECOMMENDED agentic stack
+pip install 'atomr-ontology[anthropic]'              # atomr-infer-backed, no agent loop
+pip install 'atomr-ontology[http-driver]'            # DEPRECATED — prefer the provider-* extras
 ```
 
 Building from source needs [`maturin`](https://www.maturin.rs/):
@@ -146,13 +151,19 @@ To run against a real LLM, build with one of the provider features
 and pass `--provider openai` / `anthropic` / `litellm`:
 
 ```bash
-export OPENAI_API_KEY=sk-...
-cargo run -p auto_extract_from_text --features http-driver -- \
-    --provider openai --model gpt-4o-mini --out-dir out
+export ANTHROPIC_API_KEY=...
+cargo run -p auto_extract_from_text --features provider-anthropic -- \
+    --provider anthropic --model claude-3-5-sonnet --out-dir out
+# Or, with the deprecated direct-REST shim (will be removed in 0.4):
+# cargo run -p auto_extract_from_text --features http-driver -- \
+#     --provider openai --model gpt-4o-mini --out-dir out
 ```
 
-The pipeline is described in [`agents.md`](agents.md); the
-provider matrix is in [`providers.md`](providers.md).
+The pipeline is described in [`agents.md`](agents.md); the provider
+matrix and the canonical
+`AgentBackend → atomr_agents::Agent → atomr_infer::Provider`
+layering are in
+[`providers.md`](providers.md#provider-selection).
 
 ## Where to next
 

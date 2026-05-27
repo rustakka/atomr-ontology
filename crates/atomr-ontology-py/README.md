@@ -14,10 +14,23 @@ pip install atomr-ontology
 ```
 
 To enable a specific inference provider (so extractors can drive a real LLM
-instead of the `MockBackend`), install the matching extra. These map 1:1 onto
-the upstream `atomr-infer` cargo features:
+instead of the `MockBackend`), install the matching extra. The
+**recommended layering** for agentic workflows is
+`AgenticAgent → atomr_agents::Agent → atomr_infer::Provider` — pick one
+of the `agents-with-*` extras to get the agent surface bundled with the
+matching `atomr-infer` provider in one shot. See
+[`docs/providers.md`](../../docs/providers.md#provider-selection) for the
+full decision tree.
 
 ```bash
+# Recommended — agentic stack with one provider:
+pip install atomr-ontology[agents-with-anthropic]
+pip install atomr-ontology[agents-with-openai]
+pip install atomr-ontology[agents-with-litellm]
+pip install atomr-ontology[agents-with-candle]
+
+# Direct atomr-infer provider, no agent loop (each maps 1:1 onto the
+# matching `atomr-infer` cargo feature):
 pip install atomr-ontology[openai]
 pip install atomr-ontology[anthropic]
 pip install atomr-ontology[gemini]
@@ -28,6 +41,10 @@ pip install atomr-ontology[ort]
 pip install atomr-ontology[tensorrt]
 pip install atomr-ontology[mistralrs]
 pip install atomr-ontology[cudarc]
+
+# DEPRECATED — slated for removal in 0.4. Prefer one of the provider
+# extras above.
+pip install atomr-ontology[http-driver]
 ```
 
 ## Quickstart
