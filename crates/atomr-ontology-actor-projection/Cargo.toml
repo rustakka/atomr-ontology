@@ -1,0 +1,39 @@
+[package]
+name = "atomr-ontology-actor-projection"
+description = "Project actor-system persistence data (supervision paths, journal events, serialized state) into atomr-ontology graphs."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+
+[dependencies]
+atomr-ontology-core = { workspace = true }
+atomr-ontology-store = { workspace = true }
+atomr-ontology-persist = { workspace = true }
+atomr-ontology-provenance = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full", "test-util", "macros", "rt-multi-thread"] }
+
+[features]
+default = []
+# Synthesize an ActorPersistenceSource from any Checkpointer whose
+# snapshots already carry actor records as ontology nodes.
+snapshot-source = []
+# Reserved for future integration with the atomr-agents crate.
+agents = []
+
+[lints]
+workspace = true

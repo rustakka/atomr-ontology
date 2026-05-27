@@ -47,6 +47,9 @@ atomr-ontology-import = { workspace = true }
 atomr-ontology-viz = { workspace = true }
 atomr-ontology-shacl = { workspace = true }
 atomr-ontology-remote = { workspace = true, features = ["client"], default-features = false }
+atomr-ontology-actor-projection = { workspace = true }
+atomr-ontology-core = { workspace = true }
+atomr-ontology-store = { workspace = true }
 
 [features]
 default = []

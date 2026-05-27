@@ -22,6 +22,7 @@ event loop. The asyncio runtime is initialized lazily on first use.
 """
 
 from ._atomr_ontology import (
+    actor_projection,
     core,
     embed,
     extract,
@@ -150,6 +151,7 @@ from ._atomr_ontology.testkit import (
 
 __all__ = [
     # submodules
+    "actor_projection",
     "core",
     "embed",
     "extract",

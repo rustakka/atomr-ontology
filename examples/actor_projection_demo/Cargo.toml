@@ -1,0 +1,19 @@
+[package]
+name = "actor_projection_demo"
+description = "End-to-end demo of atomr-ontology-actor-projection: project a synthetic actor system into an ontology and print the result."
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+atomr-ontology-actor-projection = { workspace = true }
+atomr-ontology-core = { workspace = true }
+atomr-ontology-persist = { workspace = true }
+atomr-ontology-store = { workspace = true }
+atomr-ontology-provenance = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+
+[lints]
+workspace = true

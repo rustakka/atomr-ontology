@@ -13,6 +13,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "actor_projection_demo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "atomr-ontology-actor-projection",
+ "atomr-ontology-core",
+ "atomr-ontology-persist",
+ "atomr-ontology-provenance",
+ "atomr-ontology-store",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -857,6 +871,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "atomr-ontology-actor-projection"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "atomr-ontology-core",
+ "atomr-ontology-persist",
+ "atomr-ontology-provenance",
+ "atomr-ontology-store",
+ "chrono",
+ "futures",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "atomr-ontology-core"
 version = "0.1.0"
 dependencies = [
@@ -977,6 +1010,8 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "atomr-ontology",
+ "atomr-ontology-actor-projection",
+ "atomr-ontology-core",
  "atomr-ontology-embed",
  "atomr-ontology-import",
  "atomr-ontology-persist",
@@ -985,6 +1020,7 @@ dependencies = [
  "atomr-ontology-reason",
  "atomr-ontology-remote",
  "atomr-ontology-shacl",
+ "atomr-ontology-store",
  "atomr-ontology-version",
  "atomr-ontology-viz",
  "chrono",

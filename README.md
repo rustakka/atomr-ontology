@@ -32,6 +32,7 @@ example rather than a privileged core.
 | 2 | `atomr-ontology-version` | Git-style branchable, time-travelable ontologies. |
 | 2 | `atomr-ontology-query` | Cypher + SPARQL subset parsers compiling to `TraversalPlan`. |
 | 2 | `atomr-ontology-remote` | HTTP/JSON `OntologyStore` server + client. |
+| 2 | `atomr-ontology-actor-projection` | Project actor-system persistence data (supervision paths, journal events, serialized state) into an `OntologyStore`. Four ingest modes × four projection shapes × three strategies. |
 | 3 | `atomr-ontology-testkit` | Mock backend, fixtures, assertion helpers. |
 | 3 | `atomr-ontology-org` | W3C Org Ontology / schema.org reference vocabulary. |
 | 3 | `atomr-ontology-import` | Bulk importers for SKOS, FOAF, schema.org JSON-LD. |

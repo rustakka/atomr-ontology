@@ -14,6 +14,7 @@
 
 use pyo3::prelude::*;
 
+mod actor_projection;
 mod core;
 mod embed;
 mod errors;
@@ -117,6 +118,10 @@ fn _atomr_ontology(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     remote::register(&remote)?;
     m.add_submodule(&remote)?;
 
+    let actor_projection = PyModule::new_bound(py, "actor_projection")?;
+    actor_projection::register(&actor_projection)?;
+    m.add_submodule(&actor_projection)?;
+
     #[cfg(feature = "infer")]
     {
         let infer = PyModule::new_bound(py, "infer")?;
@@ -153,6 +158,10 @@ fn _atomr_ontology(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     modules.set_item("atomr_ontology._atomr_ontology.version", m.getattr("version")?)?;
     modules.set_item("atomr_ontology._atomr_ontology.persist", m.getattr("persist")?)?;
     modules.set_item("atomr_ontology._atomr_ontology.remote", m.getattr("remote")?)?;
+    modules.set_item(
+        "atomr_ontology._atomr_ontology.actor_projection",
+        m.getattr("actor_projection")?,
+    )?;
     #[cfg(feature = "infer")]
     modules.set_item("atomr_ontology._atomr_ontology.infer", m.getattr("infer")?)?;
     #[cfg(feature = "http-driver")]
